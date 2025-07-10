@@ -22,31 +22,6 @@
         description: Number of images to plot
 - step:
     name: train
-    image: docker.io/python:3.7
-    environment: pro-trial-prod-oci-vm-gpu-a10-1
-    environment-variables:
-      - name: "NGC_API_KEY"
-        default: "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"
-      - name: "TAO_DOCKER_CONFIG_OVERRIDE"
-        default: "1" # <- This tells TAO to skip the /root/.docker/config.json check
-    inputs:
-      - name: dataset
-        default: dataset://KITTI/version2
-        description: Path to the dataset created in the previous step
-        keep-directories: full
-    command:
-      # Docker login using NGC API key
-      - wget --content-disposition https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/3.158.1/files/ngccli_linux.zip -O ngccli_linux.zip && unzip ngccli_linux.zip
-      - find ngc-cli/ -type f -exec md5sum {} + | LC_ALL=C sort | md5sum -c ngc-cli.md5
-      - sha256sum ngccli_linux.zip
-      - 41b5932fc81432c3245a865126551d17a151a8b227dc50de8c03d6acc5507f53
-      - chmod u+x ngc-cli/ngc
-      - mkdir -p ~/.ngc && echo -e "[ngc]\napiKey = $NGC_API_KEY\norg = nvidia" > ~/.ngc/config
-      - export PATH="$PATH:$(pwd)/ngc-cli"
-      - pip install -r requirements.txt
-      - python train.py
-- step:
-    name: test
     image: nvcr.io/nvidia/tao/tao-toolkit:5.0.0-tf1.15.5
     environment: pro-trial-prod-oci-vm-gpu-a10-1
     inputs:
@@ -56,8 +31,39 @@
         keep-directories: full
       - name: train_specs
         default: datum://0197cd67-a25d-9804-536a-2d420f98ee3a
-    outputs:
-      - name: tfrecords
+      - name: pretrained_model
+        default: datum://0197f671-cb76-c9d9-8033-46ca3d8a1335
+    parameters:
+      - name: num_plot_images
+        type: integer
+        default: 10
+        description: Number of images to plot
     command:
       - pip install -r requirements.txt
-      - python test.py
+      - python train.py
+    environment-variables:
+      - name: NGC_API_KEY
+        default: ${NGC_API_KEY}
+        description: NGC API key
+- step:
+    name: evaluate
+    image: nvcr.io/nvidia/tao/tao-toolkit:5.0.0-tf1.15.5
+    environment: pro-trial-prod-oci-vm-gpu-a10-1
+    inputs:
+      - name: dataset
+        default: dataset://KITTI/version2
+        description: Path to the dataset created in the previous step
+        keep-directories: full
+      - name: train_specs
+        default: datum://0197f478-4dc8-d6d9-585f-9c401fc0f8e1
+      - name: tfrecords
+        default: datum://0197f652-e8be-e1fc-177b-c1130b8fdbc0
+      - name: model
+        default: datum://0197f478-4d1a-944a-5bb6-b6fa509fc2a2
+    command:
+      - pip install -r requirements.txt
+      - python evaluate.py
+    environment-variables:
+      - name: NGC_API_KEY
+        default: ${NGC_API_KEY}
+        description: NGC API key

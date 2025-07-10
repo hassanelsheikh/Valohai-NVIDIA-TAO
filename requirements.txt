@@ -1,0 +1,5 @@
+valohai-utils
+matplotlib
+nvidia-pyindex
+nvidia-tao
+tqdm

@@ -20,27 +20,32 @@
         type: integer
         default: 10
         description: Number of images to plot
+      - name: subset
+        type: integer
+        default: 2000
 - step:
     name: train
     image: nvcr.io/nvidia/tao/tao-toolkit:5.0.0-tf1.15.5
     environment: pro-trial-prod-oci-vm-gpu-a10-1
     inputs:
       - name: dataset
-        default: dataset://KITTI/version2
+        default: dataset://KITTI/version3
         description: Path to the dataset created in the previous step
         keep-directories: full
+      - name: specs
+        default: datum://0197fe54-cead-ec87-47b3-033c295fafac
+        description: Sample configuration file shown below converts the 100% KITTI dataset to the training set.
       - name: train_specs
         default: datum://0197cd67-a25d-9804-536a-2d420f98ee3a
       - name: pretrained_model
         default: datum://0197f671-cb76-c9d9-8033-46ca3d8a1335
     parameters:
-      - name: num_plot_images
+      - name: epochs
         type: integer
-        default: 10
-        description: Number of images to plot
+        default: 100
     command:
       - pip install -r requirements.txt
-      - python train.py
+      - python train.py {parameters}
     environment-variables:
       - name: NGC_API_KEY
         default: ${NGC_API_KEY}
@@ -56,6 +61,15 @@
         description: Directory where the specs will be stored
       - name: LOCAL_PROJECT_DIR
         default: "/project"
+      - name: TAO_DOCKER_DISABLE
+        default: "1"
+        description: Disable the Docker config override for the TAO Toolkit (Leave this as it is)
+      - name: TF_ALLOW_IOLIBS
+        default: "1"
+        description: Allow TensorFlow to use I/O libraries (Leave this as it is)
+      - name: TAO_DOCKER_CONFIG_OVERRIDE
+        default: "1"
+        description: Override the Docker configuration for the TAO Toolkit (Leave this as it is)
 
 - step:
     name: evaluate
@@ -63,7 +77,7 @@
     environment: pro-trial-prod-oci-vm-gpu-a10-1
     inputs:
       - name: dataset
-        default: dataset://KITTI/version2
+        default: dataset://KITTI/version3
         description: Path to the dataset created in the previous step
         keep-directories: full
       - name: train_specs
@@ -71,7 +85,7 @@
       - name: tfrecords
         default: datum://0197f652-e8be-e1fc-177b-c1130b8fdbc0
       - name: model
-        default: datum://0197f478-4d1a-944a-5bb6-b6fa509fc2a2
+        default: datum://0197fe95-81b2-f904-d838-df192de4d5eb
     command:
       - pip install -r requirements.txt
       - python evaluate.py
@@ -90,3 +104,12 @@
         description: Directory where the specs will be stored
       - name: LOCAL_PROJECT_DIR
         default: "/project"
+      - name: TAO_DOCKER_DISABLE
+        default: "1"
+        description: Disable the Docker config override for the TAO Toolkit (Leave this as it is)
+      - name: TF_ALLOW_IOLIBS
+        default: "1"
+        description: Allow TensorFlow to use I/O libraries (Leave this as it is)
+      - name: TAO_DOCKER_CONFIG_OVERRIDE
+        default: "1"
+        description: Override the Docker configuration for the TAO Toolkit (Leave this as it is)

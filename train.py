@@ -12,17 +12,23 @@ import re
 import tensorflow as tf
 import valohai
 
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epochs', type=int, default=100, help='Number of training epochs.')
+    return parser.parse_args()
+
+
 def get_dataset_paths():
     dataset_paths = list(inputs('dataset').paths(process_archives=False))
-    images_path = next((p for p in dataset_paths if 'data_object_image_2.zip' in p), None)
-    labels_path = next((p for p in dataset_paths if 'data_object_label_2.zip' in p), None)
-    spec_file_path = next((p for p in dataset_paths if 'detectnet_v2_tfrecords_kitti_trainval_updated.txt' in p), None)
+    images_path = next((p for p in dataset_paths if 'images.zip' in p), None)
+    labels_path = next((p for p in dataset_paths if 'labels.zip' in p), None)
     
-
-    if not all([images_path, labels_path, spec_file_path]):
+    if not all([images_path, labels_path]):
         raise FileNotFoundError("Missing one or more required input files.")
 
-    return images_path, labels_path, spec_file_path
+    return images_path, labels_path
 
 # Auto-detect subdir containing 'training/image_2'
 def find_kitti_root(base_path):
@@ -58,14 +64,14 @@ def modify_spec_file(spec_file_path, new_class_mappings=None):
             spec_content = spec_content.replace(f'key: "{old_class}"', f'key: "{new_class}"')
 
     tf_temp_dir = tempfile.mkdtemp()
-    modified_spec_file_path = os.path.join(tf_temp_dir, 'detectnet_v2_tfrecords_kitti_trainval_updated.txt')
+    modified_spec_file_path = os.path.join(tf_temp_dir, 'detectnet_v2_tfrecords_kitti_trainval.txt')
     with open(modified_spec_file_path, 'w') as file:
         file.write(spec_content)
 
     print(f"✅ Spec file updated and saved at {modified_spec_file_path}")
     return modified_spec_file_path
 
-def modify_training_spec_file(original_spec_path, tfrecords_path, image_dir):
+def modify_training_spec_file(original_spec_path, tfrecords_path, image_dir, epochs):
     with open(original_spec_path, 'r') as file:
         content = file.read()
 
@@ -90,7 +96,7 @@ data_sources {{
     flags=re.MULTILINE
 )
 
-    content = re.sub(r'num_epochs:\s*\d+', 'num_epochs: 5', content)
+    content = re.sub(r'num_epochs:\s*\d+', f'num_epochs: {epochs}', content)
 
     # Save modified spec to a temp location
     modified_spec_path = os.path.join(tempfile.mkdtemp(), "detectnet_v2_train_modified.txt")
@@ -110,18 +116,16 @@ data_sources {{
 
 if __name__ == "__main__":
     # Setup env vars
-    os.environ["TAO_DOCKER_DISABLE"] = "1"
-    os.environ["TF_ALLOW_IOLIBS"] = "1"
     ngc_key = os.environ.get("NGC_API_KEY")
     if ngc_key is None:
         raise ValueError("NGC_API_KEY environment variable is not set!")
     os.environ["KEY"] = ngc_key
-    os.environ["TAO_DOCKER_CONFIG_OVERRIDE"] = "1"
+    
+    args = parse_args()
 
-    images_path, labels_path, spec_file_path = get_dataset_paths()
+    images_path, labels_path = get_dataset_paths()
     print("Images path:", images_path)
     print("Labels path:", labels_path)
-    print("Spec path:", spec_file_path)
 
     # Unpack into correct folder structure under DATA_DOWNLOAD_DIR
     temp_dir = tempfile.mkdtemp()
@@ -148,7 +152,6 @@ if __name__ == "__main__":
     drive_map = {
         "Mounts": [
             {"source": os.environ["LOCAL_PROJECT_DIR"], "destination": "/workspace/tao-experiments"},
-            {"source": os.path.dirname(spec_file_path), "destination": os.environ["SPECS_DIR"]}
         ]
     }
     with open(mounts_file, "w") as mfile:
@@ -157,6 +160,8 @@ if __name__ == "__main__":
     # Correct location should point to /training
     kitti_root = os.path.join(temp_dir, 'tao_data', 'training')
     # Modify spec file using the correct path
+    spec_file_path = valohai.inputs("specs").path(process_archives=False)
+
     modified_spec = modify_spec_file(
         spec_file_path=spec_file_path,
     )
@@ -214,7 +219,8 @@ if __name__ == "__main__":
     train_spec_path = modify_training_spec_file(
         original_spec_path=original_train_spec,
         tfrecords_path="/workspace/tao-experiments/data/tfrecords/kitti_trainval-fold-*",
-        image_dir="/workspace/tao-experiments/data/training"
+        image_dir="/workspace/tao-experiments/data/training",
+        epochs=args.epochs
     )
 
 

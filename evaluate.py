@@ -12,59 +12,26 @@ import re
 import valohai
 
 
+
 def get_dataset_paths():
     dataset_paths = list(inputs('dataset').paths(process_archives=False))
-    images_path = next((p for p in dataset_paths if 'data_object_image_2.zip' in p), None)
-    labels_path = next((p for p in dataset_paths if 'data_object_label_2.zip' in p), None)
-    spec_file_path = next((p for p in dataset_paths if 'detectnet_v2_tfrecords_kitti_trainval_updated.txt' in p), None)
-
-    if not all([images_path, labels_path, spec_file_path]):
-        raise FileNotFoundError("Missing one or more required input files.")
+    images_path = next((p for p in dataset_paths if 'images.zip' in p), None)
+    labels_path = next((p for p in dataset_paths if 'labels.zip' in p), None)
     
-    return images_path, labels_path, spec_file_path
+    if not all([images_path, labels_path]):
+        raise FileNotFoundError("Missing one or more required input files.")
 
-def modify_spec_file(spec_file_path, new_class_mappings=None):
-    with open(spec_file_path, 'r') as file:
-        spec_content = file.read()
+    return images_path, labels_path
 
-    #Patch the root directory path
-    correct_data_path = "/workspace/tao-experiments/data/training"
-
-    spec_content = re.sub(r'root_directory_path:\s*".*?"',
-                          f'root_directory_path: "{correct_data_path}"',
-                          spec_content)
-
-    spec_content = re.sub(r'image_directory_path:\s*".*?"',
-                          f'image_directory_path: "{correct_data_path}"',
-                          spec_content)
-
-    spec_content = re.sub(r'image_dir_name:\s*".*?"', 'image_dir_name: "image_2"', spec_content)
-    spec_content = re.sub(r'label_dir_name:\s*".*?"', 'label_dir_name: "label_2"', spec_content)
-
-    spec_content = re.sub(r'val_split:\s*\d+(\.\d+)?', 'val_split: 14', spec_content)
-
-    if new_class_mappings:
-        for old_class, new_class in new_class_mappings.items():
-            spec_content = spec_content.replace(f'key: "{old_class}"', f'key: "{new_class}"')
-
-    tf_temp_dir = tempfile.mkdtemp()
-    modified_spec_file_path = os.path.join(tf_temp_dir, 'detectnet_v2_tfrecords_kitti_trainval_updated.txt')
-    with open(modified_spec_file_path, 'w') as file:
-        file.write(spec_content)    
-
-    return modified_spec_file_path
 
 if __name__ == "__main__":
     # Setup env vars
-    os.environ["TAO_DOCKER_DISABLE"] = "1"
-    os.environ["TF_ALLOW_IOLIBS"] = "1"
     ngc_key = os.environ.get("NGC_API_KEY")
     if ngc_key is None:
         raise ValueError("NGC_API_KEY environment variable is not set!")
     os.environ["KEY"] = ngc_key
-    os.environ["TAO_DOCKER_CONFIG_OVERRIDE"] = "1"
 
-    images_path, labels_path, spec_file_path = get_dataset_paths()
+    images_path, labels_path = get_dataset_paths()
 
     tf_records_archive = valohai.inputs("tfrecords").path(process_archives=False)
     unzip_dir = "/workspace/tao-experiments/data/tfrecords"
@@ -104,7 +71,6 @@ if __name__ == "__main__":
     drive_map = {
         "Mounts": [
             {"source": os.environ["LOCAL_PROJECT_DIR"], "destination": "/workspace/tao-experiments"},
-            {"source": os.path.dirname(spec_file_path), "destination": os.environ["SPECS_DIR"]}
         ]
     }
     with open(mounts_file, "w") as mfile:
@@ -113,23 +79,10 @@ if __name__ == "__main__":
     # Correct location should point to /training
     kitti_root = os.path.join(temp_dir, 'tao_data', 'training')
     # Modify spec file using the correct path
-    modified_spec = modify_spec_file(
-        spec_file_path=spec_file_path,
-    )
-
-    # Save modified spec to mounted output dir
-    specs_target_dir = os.path.join(os.environ["LOCAL_PROJECT_DIR"], "detectnet_v2", "specs")
-    os.makedirs(specs_target_dir, exist_ok=True)
-
-    final_spec_path = os.path.join(specs_target_dir, os.path.basename(modified_spec))
-    shutil.copy(modified_spec, final_spec_path)
 
     # Make sure output folder exists
     tfrecord_output_dir = "/workspace/tao-experiments/data/tfrecords/kitti_trainval"
     os.makedirs(tfrecord_output_dir, exist_ok=True)
-
-    # Confirm SPECS_DIR points to correct directory
-    os.environ["SPECS_DIR"] = specs_target_dir
     
     eval_cmd = [
         "tao", "model", "detectnet_v2", "evaluate",

@@ -14,8 +14,7 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Load and visualize KITTI dataset.")
     parser.add_argument('--num_plot_images', type=int, default=10, help='Number of sample images to visualize.')
-    parser.add_argument('--subset', action='store_true', help='Enable subset generation')
-    parser.add_argument('--subset_num_images', type=int, default=100, help='Number of images for subset')
+    parser.add_argument('--subset', type=int, default=None, help='Enable subset generation')
 
     return parser.parse_args()
 
@@ -83,7 +82,7 @@ def visualize_kitti_images_with_boxes(image_dir, label_dir, output_dir, num_samp
         plt.close()
         valohai.outputs().live_upload(save_path)
 
-def generate_kitti_subset(source_image_dir, source_label_dir, output_dir, num_images=100):
+def generate_kitti_subset(source_image_dir, source_label_dir, output_dir, num_images=None):
     """Create a subset of the KITTI dataset for training."""
     image_out_dir = os.path.join(output_dir, "training", "image_2")
     label_out_dir = os.path.join(output_dir, "training", "label_2")
@@ -91,39 +90,17 @@ def generate_kitti_subset(source_image_dir, source_label_dir, output_dir, num_im
     os.makedirs(label_out_dir, exist_ok=True)
 
     all_images = sorted(os.listdir(source_image_dir))
-    selected_ids = [f.replace('.png', '') for f in all_images[:num_images]]
+    if num_images:
+        selected_ids = [f.replace('.png', '') for f in all_images[:num_images]]
+    else:
+        selected_ids = [f.replace('.png', '') for f in all_images]
 
     for id in tqdm(selected_ids, desc="Creating KITTI subset"):
         shutil.copy(os.path.join(source_image_dir, f"{id}.png"), os.path.join(image_out_dir, f"{id}.png"))
         shutil.copy(os.path.join(source_label_dir, f"{id}.txt"), os.path.join(label_out_dir, f"{id}.txt"))
 
-    print(f"✅ Created subset with {len(selected_ids)} images at: {output_dir}")
+    print(f"Created subset with {len(selected_ids)} images at: {output_dir}")
 
-
-def modify_spec_file(spec_file_path, new_image_dir, new_label_dir, new_class_mappings=None):
-    """Modify the spec file with new paths and class mappings."""
-    
-    # Read the spec file
-    with open(spec_file_path, 'r') as file:
-        spec_content = file.read()
-
-    # Modify the image and label directories (replace paths with Valohai input paths)
-    spec_content = spec_content.replace("/workspace/tao-experiments/data/", new_image_dir)
-    spec_content = spec_content.replace("training/image_2", os.path.join(new_image_dir, 'training', 'image_2'))
-    spec_content = spec_content.replace("training/label_2", os.path.join(new_label_dir, 'training', 'label_2'))
-
-    # Modify class mappings if provided
-    if new_class_mappings:
-        for old_class, new_class in new_class_mappings.items():
-            spec_content = spec_content.replace(f'key: "{old_class}"', f'key: "{new_class}"')
-
-    # Save the modified spec file back to Valohai outputs
-    modified_spec_file_path = valohai.outputs().path('specs/detectnet_v2_tfrecords_kitti_trainval_updated.txt')
-    with open(modified_spec_file_path, 'w') as file:
-        file.write(spec_content)
-    
-    print(f"Spec file updated and saved at {modified_spec_file_path}")
-    return modified_spec_file_path
 
 if __name__ == "__main__":
     args = parse_args()
@@ -162,6 +139,7 @@ if __name__ == "__main__":
         print("Number of labels in the train/val set. {}".format(num_training_labels))
         print("Number of images in the test set. {}".format(num_testing_images))
 
+
         #Sample kitti label
         # Display a sample label file
         sample_label_file = os.path.join(label_path, '000110.txt')
@@ -177,35 +155,66 @@ if __name__ == "__main__":
 
         new_image_dir = image_dir  # Valohai input for images
         new_label_dir = label_dir  # Valohai input for labels
-
-        modified_spec_file_path = modify_spec_file(spec_file_path, new_image_dir, new_label_dir)
         
         # Save the train and label directories as Valohai outputs
 
         train_output_dir = valohai.outputs().path('images')
         labels_output_dir = valohai.outputs().path('labels')
 
-        # Copy the ZIP files into the output directory
-        shutil.copy(train_archive, os.path.join(train_output_dir, 'data_object_image_2.zip'))
-        shutil.copy(labels_archive, os.path.join(labels_output_dir, 'data_object_label_2.zip'))
+        os.makedirs(train_output_dir, exist_ok=True)
+        os.makedirs(labels_output_dir, exist_ok=True)
+
+
+        if args.subset:
+            subset_output_dir = os.path.join(temp_dir, "kitti_subset")
+            generate_kitti_subset(
+                source_image_dir=train_image_path,
+                source_label_dir=label_path,
+                output_dir=subset_output_dir,
+                num_images=args.subset
+            )
+            # Ensure the internal folder structure is preserved in ZIPs
+            base_subset_dir = subset_output_dir  # Contains `training/image_2` and `training/label_2`
+
+            # Zip only the `training/image_2` structure
+            subset_images_zip = shutil.make_archive(
+                base_name="images",                  # will become images.zip
+                format='zip',
+                root_dir=base_subset_dir,
+                base_dir="training/image_2"
+            )
+
+            # Zip only the `training/label_2` structure
+            subset_labels_zip = shutil.make_archive(
+                base_name="labels",                  # will become labels.zip
+                format='zip',
+                root_dir=base_subset_dir,
+                base_dir="training/label_2"
+            )
+
+            # Move zipped files to Valohai output paths
+            shutil.move(subset_images_zip, os.path.join(train_output_dir, 'images.zip'))
+            shutil.move(subset_labels_zip, os.path.join(labels_output_dir, 'labels.zip'))
+
+        else:
+            # If no subset is generated, fall back to full archives
+            shutil.copy(train_archive, os.path.join(train_output_dir, 'images.zip'))
+            shutil.copy(labels_archive, os.path.join(labels_output_dir, 'labels.zip'))
 
         metadata = {
-            "images/data_object_image_2.zip": {
+            "images/images.zip": {
                 "valohai.dataset-versions": [
-                    "dataset://KITTI/version2"
+                    "dataset://KITTI/version3"
                 ]
             },
-            "labels/data_object_label_2.zip": {
+            "labels/labels.zip": {
                 "valohai.dataset-versions": [
-                    "dataset://KITTI/version2"
+                    "dataset://KITTI/version3"
                 ]
             },
-            "specs/detectnet_v2_tfrecords_kitti_trainval_updated.txt": {
-                "valohai.dataset-versions": [
-                    "dataset://KITTI/version2"
-                ]
-            }
         }
+            
+
 
         metadata_path = valohai.outputs().path("valohai.metadata.jsonl")
         with open(metadata_path, "w") as outfile:

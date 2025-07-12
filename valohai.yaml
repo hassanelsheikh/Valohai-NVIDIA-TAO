@@ -45,6 +45,18 @@
       - name: NGC_API_KEY
         default: ${NGC_API_KEY}
         description: NGC API key
+      - name: USER_EXPERIMENT_DIR
+        default: "/valohai/outputs/tao-experiments/detectnet_v2"
+        description: Directory where the experiment outputs will be stored
+      - name: NUM_GPUS
+        default: "1"
+        description: Number of GPUs to use for training
+      - name: SPECS_DIR
+        default: "/valohai/outputs/tao-experiments/specs"
+        description: Directory where the specs will be stored
+      - name: LOCAL_PROJECT_DIR
+        default: "/project"
+
 - step:
     name: evaluate
     image: nvcr.io/nvidia/tao/tao-toolkit:5.0.0-tf1.15.5
@@ -67,3 +79,14 @@
       - name: NGC_API_KEY
         default: ${NGC_API_KEY}
         description: NGC API key
+      - name: USER_EXPERIMENT_DIR
+        default: "/valohai/outputs/tao-experiments/detectnet_v2"
+        description: Directory where the experiment outputs will be stored
+      - name: NUM_GPUS
+        default: "1"
+        description: Number of GPUs to use for training
+      - name: SPECS_DIR
+        default: "/valohai/outputs/tao-experiments/specs"
+        description: Directory where the specs will be stored
+      - name: LOCAL_PROJECT_DIR
+        default: "/project"

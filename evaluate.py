@@ -62,12 +62,6 @@ if __name__ == "__main__":
     if ngc_key is None:
         raise ValueError("NGC_API_KEY environment variable is not set!")
     os.environ["KEY"] = ngc_key
-    os.environ["NUM_GPUS"] = "1"
-    os.environ["USER_EXPERIMENT_DIR"] = "/valohai/outputs/tao-experiments/detectnet_v2"
-    os.environ["DATA_DOWNLOAD_DIR"] = "/workspace/tao-experiments/data"
-    os.environ["SPECS_DIR"] = "/workspace/tao-experiments/detectnet_v2/specs"
-    os.environ["LOCAL_PROJECT_DIR"] = "/project"
-    os.environ["LOCAL_EXPERIMENT_DIR"] = os.path.join(os.environ["LOCAL_PROJECT_DIR"], "detectnet_v2")
     os.environ["TAO_DOCKER_CONFIG_OVERRIDE"] = "1"
 
     images_path, labels_path, spec_file_path = get_dataset_paths()
@@ -144,7 +138,7 @@ if __name__ == "__main__":
         "-k", os.environ["KEY"],
     ]
 
-    print("🚀 Launching TAO evaluation...")
+    print("Launching TAO evaluation...")
 
     eval_process = subprocess.Popen(eval_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
 

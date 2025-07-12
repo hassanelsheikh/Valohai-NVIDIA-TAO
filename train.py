@@ -116,11 +116,6 @@ if __name__ == "__main__":
     if ngc_key is None:
         raise ValueError("NGC_API_KEY environment variable is not set!")
     os.environ["KEY"] = ngc_key
-    os.environ["NUM_GPUS"] = "1"
-    os.environ["USER_EXPERIMENT_DIR"] = "/valohai/outputs/tao-experiments/detectnet_v2"
-    os.environ["SPECS_DIR"] = "/valohai/outputs/tao-experiments/specs"
-    os.environ["LOCAL_PROJECT_DIR"] = "/project"
-    os.environ["LOCAL_EXPERIMENT_DIR"] = os.path.join(os.environ["LOCAL_PROJECT_DIR"], "detectnet_v2")
     os.environ["TAO_DOCKER_CONFIG_OVERRIDE"] = "1"
 
     images_path, labels_path, spec_file_path = get_dataset_paths()
@@ -195,13 +190,6 @@ if __name__ == "__main__":
         print(f.read())
 
 
-    tfrecord_files = glob.glob("/workspace/tao-experiments/data/tfrecords/*.tfrecord")
-    print("📦 All TFRecord files found:")
-    for tf in tfrecord_files:
-        print(" /", tf)
-        destination_path = valohai.outputs("my-output").path(os.path.basename(tf))
-        shutil.copy(tf, destination_path)
-
     print("🚀 Launching TAO dataset_convert...")
     result = subprocess.run(convert_cmd, text=True, capture_output=True)
     print("STDOUT:", result.stdout)
@@ -216,18 +204,9 @@ if __name__ == "__main__":
     source_dir = "/workspace/tao-experiments/data/tfrecords"
     zip_output_path = valohai.outputs("my-output").path("all_tfrecords.zip")
 
-    print("📁 Recursive listing of /workspace/tao-experiments/data/tfrecords:")
-    for root, dirs, files in os.walk("/workspace/tao-experiments/data/tfrecords"):
-        print(f"Directory: {root}")
-        for d in dirs:
-            print(f"  Subdirectory: {d}")
-        for f in files:
-            print(f"  File: {f}")
-
     shutil.make_archive(zip_output_path.replace(".zip", ""), 'zip', source_dir)
 
-    print(f"✅ Zipped and saved to: {zip_output_path}")
-        
+    print(f"TFRecords Zipped and saved to: {zip_output_path}")
 
 
         # Get the file path from the input

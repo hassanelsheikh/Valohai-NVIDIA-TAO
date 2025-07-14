@@ -174,11 +174,11 @@ if __name__ == "__main__":
                 num_images=args.subset
             )
             # Ensure the internal folder structure is preserved in ZIPs
-            base_subset_dir = subset_output_dir  # Contains `training/image_2` and `training/label_2`
+            base_subset_dir = subset_output_dir 
 
             # Zip only the `training/image_2` structure
             subset_images_zip = shutil.make_archive(
-                base_name="images",                  # will become images.zip
+                base_name="images",
                 format='zip',
                 root_dir=base_subset_dir,
                 base_dir="training/image_2"
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
             # Zip only the `training/label_2` structure
             subset_labels_zip = shutil.make_archive(
-                base_name="labels",                  # will become labels.zip
+                base_name="labels",
                 format='zip',
                 root_dir=base_subset_dir,
                 base_dir="training/label_2"

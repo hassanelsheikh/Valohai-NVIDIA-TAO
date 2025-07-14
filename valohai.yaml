@@ -70,6 +70,12 @@
       - name: TAO_DOCKER_CONFIG_OVERRIDE
         default: "1"
         description: Override the Docker configuration for the TAO Toolkit (Leave this as it is)
+      - name: TF_RECORDS_DIR
+        default: "/workspace/tao-experiments/data/tfrecords"
+        description: Directory where the TFRecords will be stored
+      - name: TRAINING_DIR
+        default: "/workspace/tao-experiments/data/training"
+        description: Directory where the training data will be stored
 
 - step:
     name: evaluate
@@ -83,7 +89,7 @@
       - name: train_specs
         default: datum://0197f478-4dc8-d6d9-585f-9c401fc0f8e1
       - name: tfrecords
-        default: datum://0197f652-e8be-e1fc-177b-c1130b8fdbc0
+        default: datum://01980853-23e5-4c27-e2bd-88fd65a475cc
       - name: model
         default: datum://0197fe95-81b2-f904-d838-df192de4d5eb
     command:
@@ -113,3 +119,36 @@
       - name: TAO_DOCKER_CONFIG_OVERRIDE
         default: "1"
         description: Override the Docker configuration for the TAO Toolkit (Leave this as it is)
+      - name: TF_RECORDS_DIR
+        default: "/workspace/tao-experiments/data/tfrecords/"
+        description: Directory where the TFRecords will be stored
+      - name: TRAINING_DIR
+        default: "/workspace/tao-experiments/data/training"
+        description: Directory where the training data will be stored
+- pipeline:
+    name: train_and_evaluate
+    parameters:
+      - name: epochs
+        default: 5
+        targets:
+          - train.parameters.epochs
+    nodes:
+      - name: load_data
+        type: execution
+        step: load_data
+      - name: train
+        type: execution
+        step: train
+        override:
+          inputs:
+            - name: dataset
+      - name: evaluate
+        type: execution
+        step: evaluate
+        override:
+          inputs:
+            - name: dataset
+    edges:
+      - [load_data.outputs.*.zip, train.input.dataset]
+      - [load_data.outputs.*.zip, evaluate.input.dataset]
+      - [train.outputs.*.pth, evaluate.input.model]

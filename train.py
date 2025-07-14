@@ -5,11 +5,8 @@ import subprocess
 from valohai import inputs
 import argparse
 import json
-import urllib.request
-import glob
 import zipfile
 import re
-import tensorflow as tf
 import valohai
 
 
@@ -34,7 +31,7 @@ def get_dataset_paths():
 def find_kitti_root(base_path):
     for root, dirs, files in os.walk(base_path):
         if 'image_2' in dirs and os.path.basename(root) == 'training':
-            print(f"✅ Found KITTI training dir at: {root}")
+            print(f"Found KITTI training dir at: {root}")
             # Go up one level to get the path that contains /training
             return os.path.dirname(root)
     raise FileNotFoundError("training/image_2 not found in extracted dataset.")
@@ -44,7 +41,7 @@ def modify_spec_file(spec_file_path, new_class_mappings=None):
         spec_content = file.read()
 
     #Patch the root directory path
-    correct_data_path = "/workspace/tao-experiments/data/training"
+    correct_data_path = os.environ.get("TRAINING_DIR", "/workspace/tao-experiments/data/training")
 
     spec_content = re.sub(r'root_directory_path:\s*".*?"',
                           f'root_directory_path: "{correct_data_path}"',
@@ -113,14 +110,13 @@ data_sources {{
     return modified_spec_path
 
 
-
 if __name__ == "__main__":
     # Setup env vars
     ngc_key = os.environ.get("NGC_API_KEY")
     if ngc_key is None:
         raise ValueError("NGC_API_KEY environment variable is not set!")
     os.environ["KEY"] = ngc_key
-    
+
     args = parse_args()
 
     images_path, labels_path = get_dataset_paths()
@@ -140,11 +136,8 @@ if __name__ == "__main__":
     image_dir = os.path.join(temp_dir, 'training', 'image_2')
     label_dir = os.path.join(temp_dir, 'training', 'label_2')
 
-    # ✅ Now check them
-    print("📂 Contents of image_2:", os.listdir(image_dir)[:5])
-    print("📂 Contents of label_2:", os.listdir(label_dir)[:5])     
 
-    final_training_dir = "/workspace/tao-experiments/data/training"
+    final_training_dir = os.environ.get("TRAINING_DIR", "/workspace/tao-experiments/data/training")
     shutil.copytree(image_dir, os.path.join(final_training_dir, 'image_2'), dirs_exist_ok=True)
     shutil.copytree(label_dir, os.path.join(final_training_dir, 'label_2'), dirs_exist_ok=True)
 
@@ -173,8 +166,9 @@ if __name__ == "__main__":
     final_spec_path = os.path.join(specs_target_dir, os.path.basename(modified_spec))
     shutil.copy(modified_spec, final_spec_path)
 
+    #TODO Change this
     # Make sure output folder exists
-    tfrecord_output_dir = "/workspace/tao-experiments/data/tfrecords/kitti_trainval"
+    tfrecord_output_dir = os.environ.get("TF_RECORDS_DIR")
     os.makedirs(tfrecord_output_dir, exist_ok=True)
 
     # Confirm SPECS_DIR points to correct directory
@@ -187,26 +181,17 @@ if __name__ == "__main__":
         "-o", tfrecord_output_dir
     ]
 
-
-    # Ensure the output directory exists
-
-    print("📄 Final spec file before conversion:")
-    with open(final_spec_path, 'r') as f:
-        print(f.read())
-
-
-    print("🚀 Launching TAO dataset_convert...")
+    print("Launching TAO dataset_convert...")
     result = subprocess.run(convert_cmd, text=True, capture_output=True)
     print("STDOUT:", result.stdout)
     print("STDERR:", result.stderr)
     if result.returncode != 0:
-        print("❌ converting failed.")
+        print("converting failed.")
     else:
-        print("✅ converting complete.")
+        print("converting complete.")
 
 
-
-    source_dir = "/workspace/tao-experiments/data/tfrecords"
+    source_dir = os.environ.get("TF_RECORDS_DIR")
     zip_output_path = valohai.outputs("my-output").path("all_tfrecords.zip")
 
     shutil.make_archive(zip_output_path.replace(".zip", ""), 'zip', source_dir)
@@ -218,8 +203,8 @@ if __name__ == "__main__":
     original_train_spec = list(valohai.inputs("train_specs").paths())[0]
     train_spec_path = modify_training_spec_file(
         original_spec_path=original_train_spec,
-        tfrecords_path="/workspace/tao-experiments/data/tfrecords/kitti_trainval-fold-*",
-        image_dir="/workspace/tao-experiments/data/training",
+        tfrecords_path=tfrecord_output_dir+ "-fold-*",
+        image_dir=final_training_dir,
         epochs=args.epochs
     )
 
@@ -235,7 +220,7 @@ if __name__ == "__main__":
         "--gpus", os.environ["NUM_GPUS"],
     ]
 
-    print("🚀 Launching TAO training...")
+    print("Launching TAO training...")
 
     # Regex pattern to match the key values from TAO log
     pattern = re.compile(
@@ -265,8 +250,8 @@ if __name__ == "__main__":
         process.wait()
 
     if process.returncode != 0:
-        print(f"❌ Training failed with return code {process.returncode}")
+        print(f"Training failed with return code {process.returncode}")
     else:
-        print("✅ Training complete.")
+        print("Training complete.")
 
 

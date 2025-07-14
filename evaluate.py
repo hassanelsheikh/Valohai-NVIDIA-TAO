@@ -34,21 +34,17 @@ if __name__ == "__main__":
     images_path, labels_path = get_dataset_paths()
 
     tf_records_archive = valohai.inputs("tfrecords").path(process_archives=False)
-    unzip_dir = "/workspace/tao-experiments/data/tfrecords"
+    unzip_dir = os.environ.get("TF_RECORDS_DIR","/workspace/tao-experiments/data/tfrecords/")
     os.makedirs(unzip_dir, exist_ok=True)
 
     shutil.unpack_archive(tf_records_archive, extract_dir=unzip_dir, format='zip')
+    print("Contents of unzip_dir after extraction:", os.listdir(unzip_dir))
+
 
     print("Unzipped TFRecords to:", unzip_dir)
-
-    #recirsively list all files and directories
-    for root, dirs, files in os.walk(unzip_dir):
-        print(f"Directory: {root}")
-        for d in dirs:
-            print(f"  Subdirectory: {d}")
-        for f in files:
-            print(f"  File: {f}")
-
+    tfrecord_files = glob.glob("/workspace/tao-experiments/data/tfrecords/**/*", recursive=True)
+    for file in sorted(tfrecord_files):
+        print(file) 
 
     # Unpack into correct folder structure 
     temp_dir = tempfile.mkdtemp()
@@ -63,7 +59,7 @@ if __name__ == "__main__":
     image_dir = os.path.join(temp_dir, 'training', 'image_2')
     label_dir = os.path.join(temp_dir, 'training', 'label_2')
 
-    final_training_dir = "/workspace/tao-experiments/data/training"
+    final_training_dir = os.environ.get("TRAINING_DIR","/workspace/tao-experiments/data/training")
     shutil.copytree(image_dir, os.path.join(final_training_dir, 'image_2'), dirs_exist_ok=True)
     shutil.copytree(label_dir, os.path.join(final_training_dir, 'label_2'), dirs_exist_ok=True)
 
@@ -76,13 +72,6 @@ if __name__ == "__main__":
     with open(mounts_file, "w") as mfile:
         json.dump(drive_map, mfile, indent=4)
     # Dynamically locate the base directory
-    # Correct location should point to /training
-    kitti_root = os.path.join(temp_dir, 'tao_data', 'training')
-    # Modify spec file using the correct path
-
-    # Make sure output folder exists
-    tfrecord_output_dir = "/workspace/tao-experiments/data/tfrecords/kitti_trainval"
-    os.makedirs(tfrecord_output_dir, exist_ok=True)
     
     eval_cmd = [
         "tao", "model", "detectnet_v2", "evaluate",

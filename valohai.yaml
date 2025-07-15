@@ -71,7 +71,7 @@
         default: "1"
         description: Override the Docker configuration for the TAO Toolkit (Leave this as it is)
       - name: TF_RECORDS_DIR
-        default: "/workspace/tao-experiments/data/tfrecords"
+        default: "/workspace/tao-experiments/data/tfrecords/"
         description: Directory where the TFRecords will be stored
       - name: TRAINING_DIR
         default: "/workspace/tao-experiments/data/training"
@@ -87,11 +87,11 @@
         description: Path to the dataset created in the previous step
         keep-directories: full
       - name: train_specs
-        default: datum://0197f478-4dc8-d6d9-585f-9c401fc0f8e1
+        default: datum://0198088c-d64c-946c-ba4e-4ef8d9cc043e
       - name: tfrecords
-        default: datum://01980853-23e5-4c27-e2bd-88fd65a475cc
+        default: datum://0198088c-d6fc-a57b-c1c7-9e0e9c1b8b94
       - name: model
-        default: datum://0197fe95-81b2-f904-d838-df192de4d5eb
+        default: datum://0198088c-d3dd-e323-ed85-494663385156
     command:
       - pip install -r requirements.txt
       - python evaluate.py
@@ -120,7 +120,7 @@
         default: "1"
         description: Override the Docker configuration for the TAO Toolkit (Leave this as it is)
       - name: TF_RECORDS_DIR
-        default: "/workspace/tao-experiments/data/tfrecords/"
+        default: "/workspace/tao-experiments/data/tfrecords"
         description: Directory where the TFRecords will be stored
       - name: TRAINING_DIR
         default: "/workspace/tao-experiments/data/training"
@@ -129,7 +129,7 @@
     name: train_and_evaluate
     parameters:
       - name: epochs
-        default: 5
+        default: 10
         targets:
           - train.parameters.epochs
     nodes:
@@ -151,4 +151,6 @@
     edges:
       - [load_data.outputs.*.zip, train.input.dataset]
       - [load_data.outputs.*.zip, evaluate.input.dataset]
-      - [train.outputs.*.pth, evaluate.input.model]
+      - [train.outputs.*.hdf5, evaluate.input.model]
+      - [train.outputs.*.zip, evaluate.input.tfrecords]
+      - [train.outputs.*.txt, evaluate.input.train_specs]

@@ -21,6 +21,7 @@ This project demonstrates how to:
 
 ## Important Note
 Before running the project. Make sure you add your NGC_API_KEY in Valohai project registry
+* image pattern: nvcr.io/*
 * username: $oauthtoken
 * password: YOUR_NGC_API_KEY
 
@@ -52,7 +53,12 @@ Parameters:
 
 Configurable parameters:
 
-* `epochs`: Number of training epochs
+* `epochs`
+* `batch_size_per_gpu`
+* `use_batch_norm`
+Check [Training spec file](https://github.com/NVIDIA-AI-IOT/face-mask-detection/blob/master/tlt_specs/detectnet_v2_train_resnet18_kitti.txt) for more configurable parameters.
+
+    
 
 Environment variables (defined in `valohai.yaml`) handle:
 

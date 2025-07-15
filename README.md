@@ -19,6 +19,11 @@ This project demonstrates how to:
 * `valohai.yaml`: Defines the pipeline and steps for Valohai execution
 * `requirements.txt`: Contains the Python packages required for preprocessing and training orchestration
 
+## Important Note
+Before running the project. Make sure you add your NGC_API_KEY in Valohai project registry
+* username: $oauthtoken
+* password: YOUR_NGC_API_KEY
+
 ## Pipeline Steps
 
 The pipeline automates the full model development workflow:

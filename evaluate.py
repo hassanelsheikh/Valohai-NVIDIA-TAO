@@ -3,12 +3,9 @@ import tempfile
 import shutil
 import subprocess
 from valohai import inputs
-import argparse
 import json
-import urllib.request
 import glob
 import zipfile
-import re
 import valohai
 
 
@@ -86,7 +83,7 @@ if __name__ == "__main__":
 
     # Stream output line by line
     for line in eval_process.stdout:
-        print(line, end='')  # already includes newline
+        print(line, end='')
 
     eval_process.wait()
 

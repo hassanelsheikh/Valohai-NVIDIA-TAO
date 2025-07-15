@@ -14,6 +14,8 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', type=int, default=100, help='Number of training epochs.')
+    parser.add_argument('--batch_size_per_gpu', type=int, default=8, help='Batch size per GPU.')
+    parser.add_argument('--use_batch_norm', action='store_true', help='Enable batch normalization.')
     return parser.parse_args()
 
 
@@ -68,7 +70,7 @@ def modify_spec_file(spec_file_path, new_class_mappings=None):
     print(f"✅ Spec file updated and saved at {modified_spec_file_path}")
     return modified_spec_file_path
 
-def modify_training_spec_file(original_spec_path, tfrecords_path, image_dir, epochs):
+def modify_training_spec_file(original_spec_path, tfrecords_path, image_dir, epochs, batch_size_per_gpu=4, use_batch_norm=True):
     with open(original_spec_path, 'r') as file:
         content = file.read()
 
@@ -94,6 +96,8 @@ data_sources {{
 )
 
     content = re.sub(r'num_epochs:\s*\d+', f'num_epochs: {epochs}', content)
+    content = re.sub(r'batch_size_per_gpu:\s*\d+', f'batch_size_per_gpu: {batch_size_per_gpu}', content)
+    content = re.sub(r'use_batch_norm:\s*\w+', f'use_batch_norm: {str(use_batch_norm).lower()}', content)
 
     # Save modified spec to a temp location
     modified_spec_path = os.path.join(tempfile.mkdtemp(), "detectnet_v2_train_modified.txt")
@@ -205,7 +209,9 @@ if __name__ == "__main__":
         original_spec_path=original_train_spec,
         tfrecords_path=tfrecord_output_dir+ "-fold-*",
         image_dir=final_training_dir,
-        epochs=args.epochs
+        epochs=args.epochs,
+        batch_size_per_gpu=args.batch_size_per_gpu,
+        use_batch_norm=args.use_batch_norm
     )
 
 

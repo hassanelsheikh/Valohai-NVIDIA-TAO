@@ -42,7 +42,14 @@
     parameters:
       - name: epochs
         type: integer
-        default: 100
+        default: 10
+      - name: batch_size_per_gpu
+        type: integer
+        default: 4
+      - name: use_batch_norm
+        type: flag
+        default: true
+
     command:
       - pip install -r requirements.txt
       - python train.py {parameters}
@@ -129,9 +136,17 @@
     name: train_and_evaluate
     parameters:
       - name: epochs
-        default: 10
+        default: 130
         targets:
           - train.parameters.epochs
+      - name: batch_size_per_gpu
+        default: 8
+        targets:
+          - train.parameters.batch_size_per_gpu
+      - name: use_batch_norm
+        default: true
+        targets:
+          - train.parameters.use_batch_norm
     nodes:
       - name: load_data
         type: execution

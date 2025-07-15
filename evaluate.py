@@ -5,9 +5,10 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
-from utils import get_dataset_paths
+
 import valohai
 
+from utils import get_dataset_paths
 
 if __name__ == "__main__":
     # Setup env vars

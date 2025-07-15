@@ -1,5 +1,6 @@
 from valohai import inputs
 
+
 def get_dataset_paths():
     dataset_paths = list(inputs("dataset").paths(process_archives=False))
     images_path = next((p for p in dataset_paths if "images.zip" in p), None)

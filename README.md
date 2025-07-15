@@ -56,6 +56,7 @@ Configurable parameters:
 * `epochs`
 * `batch_size_per_gpu`
 * `use_batch_norm`
+
 Check [Training spec file](https://github.com/NVIDIA-AI-IOT/face-mask-detection/blob/master/tlt_specs/detectnet_v2_train_resnet18_kitti.txt) for more configurable parameters.
 
     

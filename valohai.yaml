@@ -49,7 +49,6 @@
       - name: use_batch_norm
         type: flag
         default: true
-
     command:
       - pip install -r requirements.txt
       - python train.py {parameters}

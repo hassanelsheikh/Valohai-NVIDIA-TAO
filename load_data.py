@@ -3,15 +3,16 @@ import json
 import os
 import shutil
 import tempfile
-from random import sample
+from typing import List, Optional, Tuple
 
+from random import sample
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import valohai
 from tqdm import tqdm
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Load and visualize KITTI dataset.")
     parser.add_argument(
@@ -23,13 +24,12 @@ def parse_args():
     parser.add_argument(
         "--subset", type=int, default=None, help="Enable subset generation"
     )
-
     return parser.parse_args()
 
 
-def parse_kitti_labels(label_file_path):
+def parse_kitti_labels(label_file_path: str) -> List[Tuple[str, float, float, float, float]]:
     """Parse a KITTI label file and extract bounding boxes."""
-    bboxes = []
+    bboxes: List[Tuple[str, float, float, float, float]] = []
     if not os.path.exists(label_file_path):
         return bboxes
 
@@ -46,8 +46,13 @@ def parse_kitti_labels(label_file_path):
     return bboxes
 
 
-def visualize_kitti_images_with_boxes(image_dir, label_dir, output_dir, num_samples=10):
-
+def visualize_kitti_images_with_boxes(
+    image_dir: str,
+    label_dir: str,
+    output_dir: valohai.OutputPath,
+    num_samples: int = 10
+) -> None:
+    """Visualize a few sample KITTI images with bounding boxes."""
     all_images = sorted(os.listdir(image_dir))
     sample_images = sample(all_images, min(len(all_images), num_samples))
 
@@ -55,31 +60,20 @@ def visualize_kitti_images_with_boxes(image_dir, label_dir, output_dir, num_samp
         img_path = os.path.join(image_dir, img_file)
         label_file = os.path.join(label_dir, img_file.replace(".png", ".txt"))
 
-        # Load image
         img = plt.imread(img_path)
-
-        # Get image dimensions in pixels
         height, width = img.shape[:2]
-
-        # Define DPI (adjust as needed; 100 is common)
         dpi = 100
-
-        # Compute figure size in inches
         figsize = (width / dpi, height / dpi)
 
-        # Create figure with true pixel size
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         ax.imshow(img)
 
-        # Draw bounding boxes
         bboxes = parse_kitti_labels(label_file)
         for label, xmin, ymin, xmax, ymax in bboxes:
-            width = xmax - xmin
-            height = ymax - ymin
             rect = patches.Rectangle(
                 (xmin, ymin),
-                width,
-                height,
+                xmax - xmin,
+                ymax - ymin,
                 linewidth=2,
                 edgecolor="r",
                 facecolor="none",
@@ -97,7 +91,6 @@ def visualize_kitti_images_with_boxes(image_dir, label_dir, output_dir, num_samp
         ax.set_title(f"Image: {img_file}")
         ax.axis("off")
 
-        # Save to Valohai output
         save_path = output_dir.path(f"annotated_image_{i + 1}.png")
         plt.savefig(save_path)
         plt.close()
@@ -105,8 +98,11 @@ def visualize_kitti_images_with_boxes(image_dir, label_dir, output_dir, num_samp
 
 
 def generate_kitti_subset(
-    source_image_dir, source_label_dir, output_dir, num_images=None
-):
+    source_image_dir: str,
+    source_label_dir: str,
+    output_dir: str,
+    num_images: Optional[int] = None
+) -> None:
     """Create a subset of the KITTI dataset for training."""
     image_out_dir = os.path.join(output_dir, "training", "image_2")
     label_out_dir = os.path.join(output_dir, "training", "label_2")

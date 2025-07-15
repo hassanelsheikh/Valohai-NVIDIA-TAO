@@ -8,9 +8,10 @@ import tempfile
 import zipfile
 import valohai
 from utils import get_dataset_paths
+from typing import Optional, Dict
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -24,21 +25,23 @@ def parse_args():
     )
     return parser.parse_args()
 
-# Auto-detect subdir containing 'training/image_2'
-def find_kitti_root(base_path):
-    for root, dirs, files in os.walk(base_path):
+
+def find_kitti_root(base_path: str) -> str:
+    """Auto-detect subdir containing 'training/image_2'"""
+    for root, dirs, _ in os.walk(base_path):
         if "image_2" in dirs and os.path.basename(root) == "training":
             print(f"Found KITTI training dir at: {root}")
-            # Go up one level to get the path that contains /training
             return os.path.dirname(root)
     raise FileNotFoundError("training/image_2 not found in extracted dataset.")
 
 
-def modify_spec_file(spec_file_path, new_class_mappings=None):
+def modify_spec_file(
+    spec_file_path: str, new_class_mappings: Optional[Dict[str, str]] = None
+) -> str:
+    """Modify the dataset_convert spec file with correct paths and optional class mappings."""
     with open(spec_file_path, "r") as file:
         spec_content = file.read()
 
-    # Patch the root directory path
     correct_data_path = os.environ.get(
         "TRAINING_DIR", "/workspace/tao-experiments/data/training"
     )
@@ -48,20 +51,17 @@ def modify_spec_file(spec_file_path, new_class_mappings=None):
         f'root_directory_path: "{correct_data_path}"',
         spec_content,
     )
-
     spec_content = re.sub(
         r'image_directory_path:\s*".*?"',
         f'image_directory_path: "{correct_data_path}"',
         spec_content,
     )
-
     spec_content = re.sub(
         r'image_dir_name:\s*".*?"', 'image_dir_name: "image_2"', spec_content
     )
     spec_content = re.sub(
         r'label_dir_name:\s*".*?"', 'label_dir_name: "label_2"', spec_content
     )
-
     spec_content = re.sub(r"val_split:\s*\d+(\.\d+)?", "val_split: 14", spec_content)
 
     if new_class_mappings:
@@ -82,17 +82,17 @@ def modify_spec_file(spec_file_path, new_class_mappings=None):
 
 
 def modify_training_spec_file(
-    original_spec_path,
-    tfrecords_path,
-    image_dir,
-    epochs,
-    batch_size_per_gpu=4,
-    use_batch_norm=True,
-):
+    original_spec_path: str,
+    tfrecords_path: str,
+    image_dir: str,
+    epochs: int,
+    batch_size_per_gpu: int = 4,
+    use_batch_norm: bool = True,
+) -> str:
+    """Modify the training spec file with dynamic config values."""
     with open(original_spec_path, "r") as file:
         content = file.read()
 
-    # Build new data_sources block
     new_data_sources = f"""
 data_sources {{
   tfrecords_path: "{tfrecords_path}"
@@ -100,7 +100,6 @@ data_sources {{
 }}
 """
 
-    # Replace existing data_sources or append if missing
     if "data_sources" in content:
         content = re.sub(
             r"data_sources\s*{[^}]*}", new_data_sources, content, flags=re.DOTALL
@@ -126,7 +125,6 @@ data_sources {{
         content,
     )
 
-    # Save modified spec to a temp location
     modified_spec_path = os.path.join(
         tempfile.mkdtemp(), "detectnet_v2_train_modified.txt"
     )
@@ -137,11 +135,9 @@ data_sources {{
     with open(modified_spec_path, "r") as f:
         print("Patched training spec content:\n", f.read())
 
-    # Save to Valohai outputs
     valohai.outputs("my-output").path(os.path.basename(modified_spec_path))
 
     return modified_spec_path
-
 
 if __name__ == "__main__":
     # Setup env vars

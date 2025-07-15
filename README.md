@@ -21,6 +21,7 @@ This project demonstrates how to:
 
 ## Important Note
 Before running the project. Make sure you add your NGC_API_KEY in Valohai project registry
+* image pattern: nvcr.io/*
 * username: $oauthtoken
 * password: YOUR_NGC_API_KEY
 

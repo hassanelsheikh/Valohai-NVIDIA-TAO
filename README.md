@@ -24,6 +24,10 @@ Before running the project. Make sure you add your NGC_API_KEY in Valohai projec
 * username: $oauthtoken
 * password: YOUR_NGC_API_KEY
 
+TFRecords spec file: https://github.com/NVIDIA-AI-IOT/face-mask-detection/blob/master/tlt_specs/detectnet_v2_tfrecords_kitti_trainval.txt
+Training spec file: https://github.com/NVIDIA-AI-IOT/face-mask-detection/blob/master/tlt_specs/detectnet_v2_train_resnet18_kitti.txt
+
+
 ## Pipeline Steps
 
 The pipeline automates the full model development workflow:

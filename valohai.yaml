@@ -162,6 +162,9 @@
         override:
           inputs:
             - name: dataset
+        actions:
+          - when: node-starting
+            then: require-approval
     edges:
       - [load_data.outputs.*.zip, train.input.dataset]
       - [load_data.outputs.*.zip, evaluate.input.dataset]

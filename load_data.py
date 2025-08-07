@@ -49,7 +49,7 @@ def parse_kitti_labels(label_file_path: str) -> List[Tuple[str, float, float, fl
 def visualize_kitti_images_with_boxes(
     image_dir: str,
     label_dir: str,
-    output_dir: valohai.OutputPath,
+    output_dir: str,
     num_samples: int = 10
 ) -> None:
     """Visualize a few sample KITTI images with bounding boxes."""

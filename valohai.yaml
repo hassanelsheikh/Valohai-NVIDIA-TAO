@@ -22,7 +22,7 @@
         description: Number of images to plot
       - name: subset
         type: integer
-        default: 2000
+        default: 4000
 - step:
     name: train
     image: nvcr.io/nvidia/tao/tao-toolkit:5.0.0-tf1.15.5

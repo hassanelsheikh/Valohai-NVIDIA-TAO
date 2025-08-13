@@ -51,12 +51,17 @@ Parameters:
 * Trains a **DetectNet\_v2** model using NVIDIA's TAO Toolkit Docker container
 * Uses the TFRecords and spec files created in the previous step
 * Saves the resulting `.hdf5` model file and logs
+* Outputs training progress
+<img width="945" height="386" alt="image" src="https://github.com/user-attachments/assets/1659657d-516d-4384-99db-79431f054a80" />
+
+
 
 Configurable parameters:
 
 * `epochs`
 * `batch_size_per_gpu`
 * `use_batch_norm`
+* `val_split`
 
 Check [Training spec file](https://github.com/NVIDIA-AI-IOT/face-mask-detection/blob/master/tlt_specs/detectnet_v2_train_resnet18_kitti.txt) for more configurable parameters.
 
@@ -68,6 +73,8 @@ Environment variables (defined in `valohai.yaml`) handle:
 * TAO Docker flags
 * Output and data directories
 * NGC API authentication
+
+Training progress
 
 ### 3. Evaluate Model
 

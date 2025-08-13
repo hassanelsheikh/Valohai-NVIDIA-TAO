@@ -42,13 +42,16 @@
     parameters:
       - name: epochs
         type: integer
-        default: 10
+        default: 100
       - name: batch_size_per_gpu
         type: integer
         default: 4
       - name: use_batch_norm
         type: flag
         default: true
+      - name: val_split
+        type: integer
+        default: 3
     command:
       - pip install -r requirements.txt
       - python train.py {parameters}

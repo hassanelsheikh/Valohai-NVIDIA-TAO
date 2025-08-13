@@ -26,6 +26,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--use_batch_norm", action="store_true", help="Enable batch normalization."
     )
+    parser.add_argument(
+        "--val_split", type=int, default=3, help="Validation split ratio."
+    )
     return parser.parse_args()
 
 
@@ -39,7 +42,7 @@ def find_kitti_root(base_path: str) -> str:
 
 
 def modify_spec_file(
-    spec_file_path: str, new_class_mappings: Optional[Dict[str, str]] = None
+    spec_file_path: str, new_class_mappings: Optional[Dict[str, str]] = None, val_split: int = 3
 ) -> str:
     """Modify the dataset_convert spec file with correct paths and optional class mappings."""
     with open(spec_file_path, "r") as file:
@@ -65,7 +68,7 @@ def modify_spec_file(
     spec_content = re.sub(
         r'label_dir_name:\s*".*?"', 'label_dir_name: "label_2"', spec_content
     )
-    spec_content = re.sub(r"val_split:\s*\d+(\.\d+)?", "val_split: 14", spec_content)
+    spec_content = re.sub(r"val_split:\s*\d+(\.\d+)?", f"val_split: {val_split}", spec_content)
 
     if new_class_mappings:
         for old_class, new_class in new_class_mappings.items():
@@ -197,6 +200,7 @@ if __name__ == "__main__":
 
     modified_spec = modify_spec_file(
         spec_file_path=spec_file_path,
+        val_split=args.val_split,
     )
 
     # Save modified spec to mounted output dir

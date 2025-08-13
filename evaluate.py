@@ -8,7 +8,7 @@ import zipfile
 
 import valohai
 
-from utils import get_dataset_paths
+from utils.utils import get_dataset_paths
 
 if __name__ == "__main__":
     # Setup env vars

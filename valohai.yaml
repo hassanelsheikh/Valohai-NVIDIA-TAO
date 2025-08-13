@@ -135,7 +135,7 @@
     name: train_and_evaluate
     parameters:
       - name: epochs
-        default: 10
+        default: 100
         targets:
           - train.parameters.epochs
       - name: batch_size_per_gpu

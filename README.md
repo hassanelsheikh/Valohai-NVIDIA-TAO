@@ -21,9 +21,9 @@ This project demonstrates how to:
 
 ## Important Note
 Before running the project. Make sure you add your NGC_API_KEY in Valohai project registry
-* image pattern: nvcr.io/*
-* username: $oauthtoken
-* password: YOUR_NGC_API_KEY
+* image pattern: `nvcr.io/*`
+* username: `$oauthtoken`
+* password: `YOUR_NGC_API_KEY`
 
 ## Spec Files used in TAO configurations
 * [TFRecords spec file](https://github.com/NVIDIA-AI-IOT/face-mask-detection/blob/master/tlt_specs/detectnet_v2_tfrecords_kitti_trainval.txt)

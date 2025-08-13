@@ -6,9 +6,12 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+from typing import Dict, Optional
+
 import valohai
-from utils import get_dataset_paths
-from typing import Optional, Dict
+
+from utils.tb_images_logger import start_live_image_mirror, stop_mirror
+from utils.utils import get_dataset_paths
 
 
 def parse_args() -> argparse.Namespace:
@@ -205,7 +208,6 @@ if __name__ == "__main__":
     final_spec_path = os.path.join(specs_target_dir, os.path.basename(modified_spec))
     shutil.copy(modified_spec, final_spec_path)
 
-    # TODO Change this
     # Make sure output folder exists
     tfrecord_output_dir = os.environ.get("TF_RECORDS_DIR")
     os.makedirs(tfrecord_output_dir, exist_ok=True)
@@ -215,8 +217,6 @@ if __name__ == "__main__":
 
     # Launch TFRecord conversion
     convert_cmd = [
-        "tao",
-        "model",
         "detectnet_v2",
         "dataset_convert",
         "-d",
@@ -252,17 +252,31 @@ if __name__ == "__main__":
         use_batch_norm=args.use_batch_norm,
     )
 
+    # Local (writable) TB log dir for TAO
+    local_tb_dir = "/tmp/tb_logs"
+    os.makedirs(local_tb_dir, exist_ok=True)
+
+    # ---- Tensorboard logs for live upload ----#
+    tb_dir = valohai.outputs("my-output").path("tb_logs")
+    bbox_img_out = valohai.outputs("my-output").path("training_progress")
+
+    # Start live mirror (filters *_rectangle_bbox)
+    mirror = start_live_image_mirror(
+        logdir=local_tb_dir,
+        outdir=bbox_img_out,
+        tag_substring="_rectangle_bbox",
+        poll_secs=5.0,
+    )
+
     #######################################################
 
     train_cmd = [
-        "tao",
-        "model",
         "detectnet_v2",
         "train",
         "-e",
         train_spec_path,
         "-r",
-        os.environ["USER_EXPERIMENT_DIR"],
+        local_tb_dir,
         "-k",
         os.environ["KEY"],
         "--gpus",
@@ -303,6 +317,7 @@ if __name__ == "__main__":
                 print(json.dumps(metadata))
 
         process.wait()
+        stop_mirror(mirror)
 
     if process.returncode != 0:
         print(f"Training failed with return code {process.returncode}")

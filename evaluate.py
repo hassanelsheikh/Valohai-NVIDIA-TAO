@@ -5,7 +5,9 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+
 import valohai
+
 from utils import get_dataset_paths
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
-import valohai
 from typing import Tuple
+
+import valohai
 
 
 def get_dataset_paths() -> Tuple[str, str]:

@@ -3,9 +3,9 @@ import json
 import os
 import shutil
 import tempfile
+from random import sample
 from typing import List, Optional, Tuple
 
-from random import sample
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import valohai
